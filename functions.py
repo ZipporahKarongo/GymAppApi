@@ -117,3 +117,4 @@ def otp_gen():
     final_otp = "".join(otp)
     return (final_otp)
 
+

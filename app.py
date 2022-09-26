@@ -303,5 +303,42 @@ def requests():
         return response
 
 
+# fetching the membership types
+@app.route('/gym/time', methods=['GET'])
+def time():
+    try:
+        con = pymysql.connect(host='localhost', user='root', password='', database='gym_db')
+        sql = "select SUBDATE('reg_date', INTERVAL -01 YEAR)"
+        # cannot use sql injection
+        cursor = con.cursor(pymysql.cursors.DictCursor)
+        cursor.execute(sql)
+        con.commit()
+
+        # if answer == 0:
+        #     sql2 = "update `status` set status = %s"
+        #     cursor2 = con.cursor()
+        #     try:
+        #         cursor2.execute(sql2, ('Inactive'))
+        #         con.commit()
+        #
+        #     except:
+        #         con.rollback()
+
+        if cursor.rowcount == 0:
+            response = jsonify({'error': 'Not found'})
+            response.status_code = 404
+            return response
+        else:
+            rows = cursor.fetchall()
+            response = jsonify(rows)
+            response.status_code = 200
+            return response
+
+    except:
+        response = jsonify({'error': 'Server error'})
+        response.status_code = 400
+        return response
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=8000)
