@@ -90,6 +90,10 @@ def verify_password(hashed_password, provided_password):
     return pwdhash == hashed_password
 
 
+def verify_password2(password_given, password_has):
+    return password_given == password_has
+
+
 # run it , provide the hashed and the real password
 # SHOULD GIVE YOU TRUE/FALSE
 # hashedpassword = "b8d38c88da29e4488a2027351ee3068b8b5fabb7a82f38e9c5cbc2f9ac96e1ecb2fce3dfc0331763e80778ee4dc9a7699f13bee27cf829f877b3ec2326c98160dba773ab54c6087117d620739cd20a17a90f41ad1de66008929956300caead5a"
@@ -116,4 +120,3 @@ def otp_gen():
 
     final_otp = "".join(otp)
     return (final_otp)
-

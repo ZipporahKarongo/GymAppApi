@@ -303,5 +303,66 @@ def requests():
         return response
 
 
+@app.route('/gym/addnew', methods=['POST'])
+def adduser():
+    json = request.json
+    user = json['user']
+    pwd = json['pwd']
+
+    if len(user) == 0:
+        response = jsonify({'code': 1, "msg": 'firstname is Empty'})
+        response.status_code = 400
+        return response
+
+    elif len(pwd) == 0:
+        response = jsonify({'code': 2, "msg": 'last_name is Empty'})
+        response.status_code = 400
+        return response
+
+    else:
+        con = pymysql.connect(host='localhost', user='root', password='', database='challenge_db')
+        sql = "insert into users(user,pwd) values(%s,%s)"
+        cursor = con.cursor()
+        cursor.execute(sql, (user, pwd))
+        con.commit()
+        response = jsonify({'success': 'User added'})
+        response.status_code = 200
+        return response
+
+
+@app.route('/gym/login2', methods=['POST'])
+def login2():
+    json = request.json
+    user = json['user']
+    pwd = json['pwd']
+    # connecting to the database
+
+    con = pymysql.connect(host='localhost', user='root', password='', database='challenge_db')
+    sql = "select * from users where user = %s"
+    # cannot use sql injection
+    cursor = con.cursor(pymysql.cursors.DictCursor)
+    cursor.execute(sql, (user))
+
+    # check rows returned
+    if cursor.rowcount == 0:
+        response = jsonify({'error': 'Phone does not exist'})
+        response.status_code = 404
+        return response
+    else:
+        row = cursor.fetchone()
+        # password is index 5, email index 8 ,phone index 9
+
+        from functions import verify_password2, send_sms, send_email, otp_gen
+        status = verify_password2(row['pwd'], pwd)
+        if status:
+            response = jsonify({'result': row})
+            response.status_code = 200
+            return response
+        else:
+            response = jsonify({'error': 'wrong credentials'})
+            response.status_code = 404
+            return response
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=8000)
