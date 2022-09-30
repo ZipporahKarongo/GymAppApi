@@ -1,4 +1,6 @@
 import os
+from functools import wraps
+
 from flask import *
 import pymysql
 from flask_cors import CORS, cross_origin
@@ -17,6 +19,31 @@ cors = CORS(app, resources={
         "origins": "*"
     }
 })
+
+
+# decorator for verifying the JWT
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.args.get('token')
+        # jwt is passed in the request header
+        # if 'x-access-token' in request.headers:
+        #     token = request.headers['x-access-token']
+        # return 401 if token is not passed
+        if not token:
+            return jsonify({'message': 'Token is missing !!'}), 401
+
+        try:
+            # decoding the payload to fetch the stored details
+            data = jwt.decode(token, app.config['SECRET_KEY'])
+        except:
+            return jsonify({
+                'message': 'Token is invalid !!'
+            }), 401
+        # returns the current logged in users contex to the routes
+        return f(*args, **kwargs)
+
+    return decorated
 
 
 @app.route('/gym/clients', methods=['GET'])
@@ -330,6 +357,31 @@ def adduser():
         return response
 
 
+@app.route('/gym/users', methods=['GET'])
+@token_required
+def users():
+    try:
+        con = pymysql.connect(host='localhost', user='root', password='', database='challenge_db')
+        sql = "select * from users"
+        # cannot use sql injection
+        cursor = con.cursor(pymysql.cursors.DictCursor)
+        cursor.execute(sql)
+
+        if cursor.rowcount == 0:
+            response = jsonify({'error': 'Not found'})
+            response.status_code = 404
+            return response
+        else:
+            rows = cursor.fetchall()
+            response = jsonify(rows)
+            response.status_code = 200
+            return response
+    except:
+        response = jsonify({'error': 'Server error'})
+        response.status_code = 400
+        return response
+
+
 @app.route('/gym/login2', methods=['POST'])
 def login2():
     json = request.json
@@ -355,7 +407,9 @@ def login2():
         from functions import verify_password2, send_sms, send_email, otp_gen
         status = verify_password2(row['pwd'], pwd)
         if status:
-            response = jsonify({'result': row})
+            access_token = create_access_token(identity=user)
+            # return jsonify(access_token=access_token)
+            response = jsonify({'result': row, 'token': access_token})
             response.status_code = 200
             return response
         else:
